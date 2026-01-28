@@ -22,13 +22,8 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
 
     setIsConnecting(true);
     
-    // Simulate API call
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Save to localStorage for demo
-      localStorage.setItem('amazon-connected', 'true');
-      localStorage.setItem('amazon-seller-id', sellerId);
       
       onConnect({ sellerId, accessToken, refreshToken });
       setStep('success');

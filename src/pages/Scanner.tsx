@@ -14,10 +14,12 @@ import {
   Shield,
 } from 'lucide-react';
 import { useSession } from '../contexts/SessionContext';
+import { useToast } from '../contexts/ToastContext';
 import { useScannerController } from '../hooks/useScannerController';
 import ScanFilters from '../components/scanner/ScanFilters';
 import AmazonConnectionModal from '../components/amazon/AmazonConnectionModal';
 import type { Recommendation } from '../features/scanner/types';
+import { apiJson } from '../api/client';
 
 const getRecommendationColor = (rec: Recommendation | string) => {
   switch (rec) {
@@ -63,25 +65,62 @@ const Scanner = () => {
     handleCameraScan,
     handleManualScan,
   } = useScannerController(user?.email || null);
+  const { showToast } = useToast();
   const [showExtHelp, setShowExtHelp] = useState(false);
   const [isAmazonConnected, setIsAmazonConnected] = useState(false);
+  const [isAmazonLimited, setIsAmazonLimited] = useState(false);
   const [showAmazonModal, setShowAmazonModal] = useState(false);
 
   useEffect(() => {
-    // Check if Amazon account is connected
-    const connected = localStorage.getItem('amazon-connected') === 'true';
-    setIsAmazonConnected(connected);
+    const checkAmazonConnection = async () => {
+      try {
+        let conRes: { result: boolean; connect: boolean } | null = null;
+        if(role == 'admin') {
+          conRes = await apiJson<{ result: boolean; connect: boolean }>('/amazon/admin/connect');
+        } else {
+          conRes = await apiJson<{ result: boolean; connect: boolean }>('/amazon/user/connect');
+        }
+        setIsAmazonConnected(conRes?.connect || false);
+        const limRes = await apiJson<{ result: boolean; limit: boolean }>('/amazon/limit');
+        setIsAmazonLimited(limRes?.limit || false);
     
-    // Show modal if not connected and user is admin
-    if (!connected && role === 'admin') {
+      } catch (error) {
+        console.error('Failed to check Amazon connection:', error);
+        setIsAmazonConnected(false);
+      }
+    };
+    checkAmazonConnection();
+    
+    if (role === 'admin' && !isAmazonLimited) {
       setShowAmazonModal(true);
     }
   }, [role]);
 
-  const handleAmazonConnect = (credentials: { sellerId: string; accessToken: string; refreshToken: string }) => {
+  const handleConnectRequest = () => {
+    if(!isAmazonLimited) {
+      setShowAmazonModal(true);
+    } else {
+      showToast('Amazon account connection limit reached', { type: 'error' });
+      setShowAmazonModal(false);
+    }
+  };
+
+  const handleAmazonConnect = async (credentials: { sellerId: string; accessToken: string; refreshToken: string }) => {
     setIsAmazonConnected(true);
     setShowAmazonModal(false);
-    console.log('Amazon account connected:', credentials.sellerId);
+    try {
+      const res = await apiJson<{ result: boolean; message: string }>('/amazon', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      if (res?.result) {
+        showToast(res.message, { type: 'success' });
+      }
+    } catch (error) {
+      console.error('Failed to connect Amazon account:', error);
+      setIsAmazonConnected(false);
+      setShowAmazonModal(true);
+    }
   };
 
   return (
@@ -110,7 +149,6 @@ const Scanner = () => {
         </div>
       </header>
 
-      {/* Amazon Connection Requirement - Admin Only */}
       {role === 'admin' && (
         <AmazonConnectionModal
           isOpen={showAmazonModal}
@@ -119,7 +157,6 @@ const Scanner = () => {
         />
       )}
 
-      {/* Amazon Connection Warning - Admin Only */}
       {!isAmazonConnected && role === 'admin' && (
         <div className="bg-orange-50 border-b border-orange-200 px-6 py-3">
           <div className="flex items-center gap-3">
@@ -130,7 +167,7 @@ const Scanner = () => {
               </p>
             </div>
             <button
-              onClick={() => setShowAmazonModal(true)}
+              onClick={handleConnectRequest}
               className="px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 hover:shadow-lg active:bg-orange-800 active:shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
             >
               Connect Account
@@ -139,7 +176,6 @@ const Scanner = () => {
         </div>
       )}
 
-      {/* Amazon Connection Info for Users */}
       {!isAmazonConnected && role !== 'admin' && (
         <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
           <div className="flex items-center gap-3">
@@ -154,12 +190,9 @@ const Scanner = () => {
       )}
 
       <div className="flex flex-col h-[calc(100vh-81px)]">
-        {/* Main Scanning Area - Top */}
         <div className="flex-1 p-6">
           <div className="h-full flex space-x-6">
-            {/* Scanning Interface */}
             <div className="flex-1 space-y-6">
-              {/* Scan Mode Toggle */}
               <div className="bg-white rounded-2xl shadow border border-gray-200 p-4">
                 <div className="flex items-center space-x-4">
                   <button
@@ -187,11 +220,9 @@ const Scanner = () => {
                 </div>
               </div>
 
-              {/* Camera Scanner */}
               {scanMode === 'camera' && (
                 <div className="bg-white rounded-2xl shadow border border-gray-200 p-6 flex-1 flex flex-col">
                   <div className="text-center flex-1 flex flex-col">
-                    {/* Video Container with fixed aspect ratio for mobile */}
                     <div className="relative bg-black rounded-lg mb-4 overflow-hidden w-full aspect-video sm:aspect-auto sm:flex-1 sm:min-h-[400px] max-h-[60vh] sm:max-h-none">
                       <video 
                         ref={videoRef} 
@@ -244,7 +275,6 @@ const Scanner = () => {
                 </div>
               )}
 
-              {/* Manual Scanner */}
               {scanMode === 'manual' && (
                 <div className="bg-white rounded-2xl shadow border border-gray-200 p-6 relative flex-1">
                   <button
@@ -298,7 +328,6 @@ const Scanner = () => {
               )}
             </div>
 
-            {/* Current Scan Result - Side Panel */}
             {scannedItem && (
               <div className="w-80 bg-white rounded-2xl shadow border border-gray-200 p-6">
                 <div className="animate-[fade-in_0.5s]">
@@ -355,10 +384,8 @@ const Scanner = () => {
           </div>
         </div>
 
-        {/* Bottom Section - Filters and Recent Scans */}
         <div className="bg-white border-t border-gray-200 p-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Scan Filters */}
             <div className="lg:col-span-1">
               <ScanFilters
                 filter={filter}
@@ -371,7 +398,6 @@ const Scanner = () => {
               />
             </div>
 
-            {/* Scan History */}
             <div className="lg:col-span-2">
               <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold mb-4 text-gray-900">Recent Scans</h3>
@@ -408,7 +434,6 @@ const Scanner = () => {
             </div>
           </div>
 
-          {/* Session Stats - Admin Only */}
           {role === 'admin' && (
             <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-900">Today's Session</h3>
