@@ -62,8 +62,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (token) {
         try {
-          const user = await apiJson<{ id: string; email: string; name: string; role: string }>('/api/auth/me');
-          setSessionFromUser(user);
+          const data = await apiJson<{ result: boolean; user: { id: string; email: string; name: string; role: string } }>('/api/auth/me');
+          if(data?.result) {
+            setSessionFromUser(data?.user);
+          }
         } catch (error) {
           localStorage.removeItem('auth_token');
           sessionStorage.removeItem('auth_token');
@@ -98,19 +100,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const handleSignInWithEmail = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
-      const result = await apiJson<{ user: { id: string; email: string; name: string; role: string }; token: string }>('/api/auth/login', {
+      const result = await apiJson<{ result: boolean; user: { id: string; email: string; name: string; role: string }; token: string }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password, rememberMe }),
       });
       
-      if (rememberMe) {
-        localStorage.setItem('auth_token', result.token);
-        sessionStorage.removeItem('auth_token');
+      if(result?.result) {
+        if (rememberMe) {
+          localStorage.setItem('auth_token', result.token);
+          sessionStorage.removeItem('auth_token');
+        } else {
+          sessionStorage.setItem('auth_token', result.token);
+          localStorage.removeItem('auth_token');
+        }
+        setSessionFromUser(result.user);
       } else {
-        sessionStorage.setItem('auth_token', result.token);
-        localStorage.removeItem('auth_token');
+        throw new Error('Login failed');
       }
-      setSessionFromUser(result.user);
     } catch (error: any) {
       console.error('Sign in error:', error);
       throw new Error(error.message || 'Login failed');
