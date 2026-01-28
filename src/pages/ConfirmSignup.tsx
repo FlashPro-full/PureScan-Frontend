@@ -23,7 +23,7 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value.replace(/\D/g, '').slice(0, 6) // Only digits, max 6 chars
+      [name]: value.replace(/\D/g, '').slice(0, 6)
     }));
     if (error) setError(null);
   };
@@ -40,7 +40,6 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
     setIsSubmitting(true);
     try {
       await confirmSignUp(email, formData.code);
-      // Automatically sign in after confirmation
       await signInWithEmail(email, password);
       setSuccess(true);
     } catch (err: any) {
@@ -62,7 +61,6 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
     try {
       await resendSignUpCode(email);
       setError(null);
-      // Show success message briefly
       const temp = error;
       setError('New verification code sent to your email!');
       setTimeout(() => setError(temp), 3000);
@@ -98,7 +96,6 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 -right-20 h-72 w-72 rounded-full bg-red-200/30 blur-3xl" />
         <div className="absolute top-24 -left-24 h-64 w-64 rounded-full bg-red-100/40 blur-3xl" />
@@ -107,11 +104,8 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
 
       <div className="w-full max-w-md relative">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-          {/* Gradient header */}
           <div className="h-2 bg-gradient-to-r from-red-400 via-red-500 to-red-600" />
-          
           <div className="p-8">
-            {/* Logo and title */}
             <div className="flex items-center justify-center gap-3 mb-8">
               <img src={PureScanLogo} alt="PureScan logo" className="w-10 h-10 object-contain" />
               <h1 className="text-2xl font-bold text-gray-900">PureScan</h1>
@@ -127,7 +121,6 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
               </p>
             </div>
 
-            {/* Error/Success message */}
             {error && (
               <div className={`mb-6 p-4 rounded-lg border ${
                 error.includes('sent to your email') 
@@ -184,7 +177,6 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
               </button>
             </form>
 
-            {/* Resend code */}
             <div className="mt-6 text-center">
               <p className="text-gray-600 text-sm mb-2">Didn't receive the code?</p>
               <button
@@ -196,7 +188,6 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
               </button>
             </div>
 
-            {/* Back button */}
             <div className="mt-8 text-center">
               <button 
                 onClick={onBack}
@@ -209,7 +200,6 @@ const ConfirmSignup = ({ email, password, onBack }: ConfirmSignupProps) => {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="bg-gray-50 px-8 py-4 border-t border-gray-100">
             <p className="text-xs text-gray-500 text-center">
               © {new Date().getFullYear()} PureScan. All rights reserved.

@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthProvider';
 import { Eye, EyeOff, UserPlus, CreditCard, Check } from 'lucide-react';
 import PureScanLogo from '../assets/PureScanLogo.png';
 import ConfirmSignup from './ConfirmSignup';
+import { useToast } from '../contexts/ToastContext';
 
 const Signup = () => {
-  const { signUpWithEmail, loading } = useAuth();
-  const navigate = useNavigate();
+  const { signUpWithEmail, resendSignUpCode, loading } = useAuth();
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [formData, setFormData] = useState({
@@ -90,10 +91,10 @@ const Signup = () => {
       const result = await signUpWithEmail(formData.email, formData.password, {
         name: formData.name
       });
-      console.log(result);
+
       if (result.isSignUpComplete) {
-        navigate('/login');
-      } else {
+        showToast(result?.message, { type: 'success' });
+        resendSignUpCode(formData.email);
         setNeedsConfirmation(true);
       }
     } catch (err: any) {

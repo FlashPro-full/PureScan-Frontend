@@ -4,6 +4,7 @@ import { I18nProvider } from './i18n';
 import { SessionContext } from './contexts/SessionContext';
 import { SidebarContext } from './contexts/SidebarContext';
 import { AuthProvider, useAuth } from './contexts/AuthProvider';
+import { ToastProvider } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -70,9 +71,11 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ToastProvider>
   );
 };
 

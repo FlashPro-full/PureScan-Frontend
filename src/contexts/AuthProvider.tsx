@@ -5,7 +5,7 @@ import type { SessionInfo, SessionUser } from './SessionContext';
 
 interface AuthContextType extends SessionInfo {
   signInWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  signUpWithEmail: (email: string, password: string, attributes?: any) => Promise<{ isSignUpComplete: boolean; nextStep: any }>;
+  signUpWithEmail: (email: string, password: string, attributes?: any) => Promise<{ isSignUpComplete: boolean; message: string; nextStep: any }>;
   confirmSignUp: (email: string, code: string) => Promise<void>;
   resendSignUpCode: (email: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   role: 'user',
   user: null,
   signInWithEmail: async () => {},
-  signUpWithEmail: async () => ({ isSignUpComplete: false, nextStep: null }),
+  signUpWithEmail: async () => ({ isSignUpComplete: false, message: '', nextStep: null }),
   confirmSignUp: async () => {},
   resendSignUpCode: async () => {},
   resetPassword: async () => {},
@@ -125,35 +125,51 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const handleSignUpWithEmail = async (email: string, password: string, userAttributes: any = {}) => {
     try {
-      const result = await apiJson<{ user: { id: string; email: string; name: string; role: string }; token: string }>('/auth/register', {
+      const res = await apiJson<{ result: boolean; message: string }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email, password, name: userAttributes.name || email.split('@')[0] }),
       });
       
-      localStorage.setItem('auth_token', result.token);
-      setSessionFromUser(result.user);
-
       return {
-        isSignUpComplete: true,
+        isSignUpComplete: res?.result,
+        message: res?.message,
         nextStep: null
       };
+      
     } catch (error: any) {
-      console.error('Sign up error:', error);
       throw new Error(error.message || 'Registration failed');
     }
   };
 
   const handleConfirmSignUp = async (_email: string, _code: string) => {
+    // try {
+    //   const res = await apiJson<{ result: boolean; message: string }>('/auth/verify', {
+    //     method: 'POST',
+    //     body: JSON.stringify({ email, code }),
+    //   })
+    //   if(res?.result) return;
+    // } catch (error: any) {
+    //   throw new Error(error.message || 'Verification failed');
+    // }
     return;
   };
 
   const handleResendSignUpCode = async (_email: string) => {
+    // try {
+    //   const res = await apiJson<{ result: boolean; message: string }>('/auth/code', {
+    //     method: 'POST',
+    //     body: JSON.stringify({ email }),
+    //   })
+    //   if(res?.result) return;
+    // } catch (error: any) {
+    //   throw new Error(error.message || 'Verification failed');
+    // }
     return;
   };
 
   const handleResetPassword = async (email: string) => {
     try {
-      await apiJson('/auth/forgot-password', {
+      await apiJson('/auth/code', {
         method: 'POST',
         body: JSON.stringify({ email }),
       });

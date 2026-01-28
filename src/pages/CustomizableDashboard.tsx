@@ -9,9 +9,7 @@ type Category = 'Books' | 'Videos' | 'Games' | 'Music';
 
 const DASHBOARD_CONFIG_VERSION = '2.0';
 
-// Sample data for sourcing analytics - in real app, this would come from scanning database
 const generateSourcingData = (categories: Category[] = [], days: number = 7) => {
-  // Generate data for the requested number of days
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const baseScanData = [
     { scans: 87, keeps: 23, profit: 1245, Books: 12, Videos: 5, Games: 4, Music: 2 },
@@ -23,19 +21,17 @@ const generateSourcingData = (categories: Category[] = [], days: number = 7) => 
     { scans: 178, keeps: 51, profit: 3021, Books: 28, Videos: 12, Games: 8, Music: 3 },
   ];
 
-  // Generate scan performance for requested days
   const scanPerformance = [];
   for (let i = 0; i < days; i++) {
     const baseData = baseScanData[i % baseScanData.length];
     const dayName = days <= 7 ? dayNames[i] : `Day ${i + 1}`;
     
-    // Filter by categories if specified
     if (categories.length > 0 && categories.length < 4) {
       const categoryKeeps = categories.reduce((sum, cat) => sum + baseData[cat], 0);
-      const keepRate = baseData.keeps / baseData.scans; // Original keep rate
-      const categoryScans = Math.round(categoryKeeps / keepRate); // Derive scans from keeps
-      const profitPerKeep = baseData.profit / baseData.keeps; // Original profit per keep
-      const categoryProfit = Math.round(categoryKeeps * profitPerKeep); // Derive profit from keeps
+      const keepRate = baseData.keeps / baseData.scans;
+      const categoryScans = Math.round(categoryKeeps / keepRate);
+      const profitPerKeep = baseData.profit / baseData.keeps;
+      const categoryProfit = Math.round(categoryKeeps * profitPerKeep);
       
       scanPerformance.push({
         name: dayName,
@@ -52,7 +48,6 @@ const generateSourcingData = (categories: Category[] = [], days: number = 7) => 
     }
   }
 
-  // Calculate filtered decision outcomes
   const fullDecisionData = [
     { name: 'FBA', value: 42, profit: 1876, Books: 25, Videos: 8, Games: 7, Music: 2 },
     { name: 'MF', value: 28, profit: 1234, Books: 15, Videos: 6, Games: 5, Music: 2 },
@@ -75,7 +70,6 @@ const generateSourcingData = (categories: Category[] = [], days: number = 7) => 
     return decision;
   });
 
-  // Category performance (filter if categories selected)
   const allCategories = [
     { name: 'Books', value: 228, avgProfit: 18.50, category: 'Books' },
     { name: 'Videos', value: 102, avgProfit: 24.75, category: 'Videos' },
@@ -87,7 +81,6 @@ const generateSourcingData = (categories: Category[] = [], days: number = 7) => 
     ? allCategories.filter(item => categories.includes(item.category as Category))
     : allCategories;
 
-  // Top keeps (filter if categories selected)
   const allTopKeeps = [
     { name: 'Advanced Calculus Textbook', profit: 45.20, outcome: 'FBA', category: 'Books' },
     { name: 'Rare Gaming Console', profit: 78.50, outcome: 'FBA', category: 'Games' },
@@ -200,17 +193,14 @@ const CustomizableDashboard = () => {
   const [selectedPeriod] = useState('7');
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
 
-  // Load saved dashboard configuration with version migration
   useEffect(() => {
     const saved = localStorage.getItem('dashboard-config');
     if (saved) {
       try {
         const config = JSON.parse(saved);
-        // Check if config has version and is current
         if (config.version === DASHBOARD_CONFIG_VERSION && config.widgets) {
           setWidgets(config.widgets);
         } else {
-          // Reset to new default widgets for outdated configs
           console.log('Migrating dashboard config to version', DASHBOARD_CONFIG_VERSION);
           setWidgets(defaultWidgets);
         }
@@ -221,7 +211,6 @@ const CustomizableDashboard = () => {
     }
   }, []);
 
-  // Save dashboard configuration with version
   const saveDashboard = () => {
     const config = {
       version: DASHBOARD_CONFIG_VERSION,
@@ -231,7 +220,6 @@ const CustomizableDashboard = () => {
     setIsEditing(false);
   };
 
-  // Handle category filter toggle
   const toggleCategory = (category: Category) => {
     setSelectedCategories(prev => 
       prev.includes(category)
@@ -240,18 +228,15 @@ const CustomizableDashboard = () => {
     );
   };
 
-  // Generate filtered data based on selected period and categories (memoized to prevent render loops)
   const sourcingData = useMemo(() => 
     generateSourcingData(selectedCategories, parseInt(selectedPeriod)),
     [selectedCategories, selectedPeriod]
   );
 
-  // Update widget data when filters change (preserve customizations)
   useEffect(() => {
     if (!isEditing) {
       setWidgets(prevWidgets => 
         prevWidgets.map(widget => {
-          // Update widget data based on its type
           switch (widget.id) {
             case 'profit-trends':
               return { ...widget, data: sourcingData.scanPerformance };
@@ -346,7 +331,6 @@ const CustomizableDashboard = () => {
       if (w.id === id) {
         const updatedWidget = { ...w, ...updates };
         
-        // If dataSource changed, update data and config accordingly
         if (updates.dataSource && updates.dataSource !== w.dataSource) {
           const { data, config } = getWidgetDataForSource(updates.dataSource, sourcingData);
           updatedWidget.data = data;
@@ -371,7 +355,6 @@ const CustomizableDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -406,7 +389,6 @@ const CustomizableDashboard = () => {
           )}
         </div>
         
-        {/* Filters */}
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Categories:</label>
           <div className="flex gap-2">
@@ -428,7 +410,6 @@ const CustomizableDashboard = () => {
       </div>
 
 
-      {/* Dashboard Customizer - Admin Only */}
       {role === 'admin' && (
         <DashboardCustomizer
           onAddWidget={handleAddWidget}
@@ -438,7 +419,6 @@ const CustomizableDashboard = () => {
         />
       )}
 
-      {/* Widgets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-min">
         {widgets.map((widget) => (
           <DashboardWidget
