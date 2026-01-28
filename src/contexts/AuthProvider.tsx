@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (token) {
         try {
-          const data = await apiJson<{ result: boolean; user: { id: string; email: string; name: string; role: string } }>('/api/auth/me');
+          const data = await apiJson<{ result: boolean; user: { id: string; email: string; name: string; role: string } }>('/auth/me');
           if(data?.result) {
             setSessionFromUser(data?.user);
           }
@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const handleSignInWithEmail = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
-      const result = await apiJson<{ result: boolean; user: { id: string; email: string; name: string; role: string }; token: string }>('/api/auth/login', {
+      const result = await apiJson<{ result: boolean; user: { id: string; email: string; name: string; role: string }; token: string }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password, rememberMe }),
       });
@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const handleSignUpWithEmail = async (email: string, password: string, userAttributes: any = {}) => {
     try {
-      const result = await apiJson<{ user: { id: string; email: string; name: string; role: string }; token: string }>('/api/auth/register', {
+      const result = await apiJson<{ user: { id: string; email: string; name: string; role: string }; token: string }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email, password, name: userAttributes.name || email.split('@')[0] }),
       });
@@ -153,7 +153,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const handleResetPassword = async (email: string) => {
     try {
-      await apiJson('/api/auth/forgot-password', {
+      await apiJson('/auth/forgot-password', {
         method: 'POST',
         body: JSON.stringify({ email }),
       });
@@ -165,7 +165,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const handleConfirmResetPassword = async (email: string, code: string, newPassword: string) => {
     try {
-      await apiJson('/api/auth/reset-password', {
+      await apiJson('/auth/reset-password', {
         method: 'POST',
         body: JSON.stringify({ email, code, newPassword }),
       });

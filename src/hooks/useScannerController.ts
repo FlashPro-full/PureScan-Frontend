@@ -84,7 +84,7 @@ export function useScannerController(userEmail?: string | null) {
   const recordScan = useCallback(
     async (barcode: string, result: ScanResult) => {
       try {
-        await apiFetch('/api/scans', {
+        await apiFetch('/scans', {
           method: 'POST',
           body: JSON.stringify({
             type: (result.category || '').toLowerCase().includes('book')
@@ -125,7 +125,7 @@ export function useScannerController(userEmail?: string | null) {
         product: any;
         pricing: any;
         recommendation: any;
-      }>('/api/products/lookup', {
+      }>('/products/lookup', {
         method: 'POST',
         body: JSON.stringify({ barcode }),
       });

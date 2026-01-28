@@ -14,7 +14,7 @@ const parseError = async (response: Response) => {
 };
 
 export async function apiFetch(path: string, init: RequestInit = {}) {
-  const url = path.startsWith('http://') || path.startsWith('https://') ? path : `${baseUrl}${path}`;
+  const url = path.startsWith('http://') || path.startsWith('https://') ? path : `${baseUrl}/api${path}`;
 
   const headers = new Headers(init.headers || {});
   if (!headers.has('Content-Type') && init.body) {

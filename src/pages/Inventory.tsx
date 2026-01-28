@@ -73,7 +73,7 @@ const Inventory = () => {
   const updateItem = async (id: string, patch: Partial<InventoryItem>) => {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
     try {
-      await apiFetch(`/api/inventory/${encodeURIComponent(id)}`, {
+      await apiFetch(`/inventory/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         body: JSON.stringify({ rating: patch.rating }),
       });
@@ -87,7 +87,7 @@ const Inventory = () => {
   const removeItem = async (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
     try {
-      await apiFetch(`/api/inventory/${encodeURIComponent(id)}`, {
+      await apiFetch(`/inventory/${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
     } catch (err) {
