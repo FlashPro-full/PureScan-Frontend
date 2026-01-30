@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Select, SelectItem, Button } from '@tremor/react';
 import { Filter, X } from 'lucide-react';
-import type { ScanFilter, ItemType, Recommendation } from '../../features/scanner/types';
+import type { ScanFilter, Recommendation } from '../../features/scanner/types';
 
 interface ScanFiltersProps {
   filter: ScanFilter;
@@ -116,7 +116,7 @@ const ScanFilters = ({
               onValueChange={(value) => 
                 onFilterChange({
                   ...filter,
-                  itemType: value as ItemType | 'all'
+                  itemType: value as string | 'all'
                 })
               }
             >
