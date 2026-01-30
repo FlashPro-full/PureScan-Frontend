@@ -98,6 +98,11 @@ export function useScannerController(userEmail?: string | null) {
         playChime();
         return result;
       } catch (error) {
+        const status = (error as Error & { status?: number }).status;
+        if (status === 404) {
+          setScannedItem(null);
+          return null;
+        }
         console.warn('[scanner] scan failed', error);
         const fallback = mockScanResults[barcode] || DEFAULT_RESULT;
         const result = { ...fallback, userId: userEmail || undefined } as ScanResult;
