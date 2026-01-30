@@ -72,26 +72,43 @@ export function useScannerController(userEmail?: string | null) {
     async (barcode: string): Promise<ScanResult | null> => {
       try {
         const response = await apiJson<{
-          product: any;
-          pricing: any;
-          recommendation: any;
+          result?: boolean;
+          scan?: {
+            product?: {
+              title?: string;
+              category?: string;
+              itemType?: string;
+              image?: string;
+              listPrice?: { amount?: number; currency?: string };
+              author?: string;
+              publisher?: string;
+              salesRank?: string;
+              platform?: string | null;
+            };
+            recommendation?: string;
+            scannedPrice?: number;
+          };
         }>('/scan', {
           method: 'POST',
           body: JSON.stringify({ barcode, submittedBy: userEmail || undefined }),
         });
 
+        const scan = response?.scan;
+        const product = scan?.product;
         const result: ScanResult = {
-          title: response.product?.title || 'Unknown Item',
-          category: response.product?.category || 'Unknown',
-          itemType: (response.product?.itemType || 'other').toLowerCase(),
-          image: response.product?.images?.[0] || '',
-          currentPrice: response.pricing?.buyBoxPrice ?? 0,
-          suggestedPrice: response.pricing?.buyBoxPrice ?? 0,
-          recommendation: (response.recommendation?.decision ?? 'discard').toLowerCase(),
-          profit: response.recommendation?.profit ?? 0,
-          margin: response.recommendation?.margin ?? '0%',
-          author: response.product?.author,
-          publisher: response.product?.publisher,
+          title: product?.title || 'Unknown Item',
+          category: product?.category || 'Unknown',
+          itemType: (product?.itemType || 'other').toLowerCase(),
+          image: product?.image || '',
+          currentPrice: scan?.scannedPrice ?? product?.listPrice?.amount ?? 0,
+          suggestedPrice: product?.listPrice?.amount ?? scan?.scannedPrice ?? 0,
+          recommendation: (scan?.recommendation ?? 'discard').toLowerCase(),
+          profit: 0,
+          margin: '0%',
+          author: product?.author,
+          publisher: product?.publisher,
+          salesRank: product?.salesRank,
+          platform: product?.platform ?? undefined,
         };
         setScannedItem(result);
         appendHistory(barcode, result);

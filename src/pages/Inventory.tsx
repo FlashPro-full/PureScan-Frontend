@@ -27,19 +27,41 @@ const Inventory = () => {
   const loadInventory = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiJson<{ result: boolean, inventoryList: InventoryItem[] }>('/inventory');
-      const inventoryList = (data?.inventoryList ?? []).map((item: any) => ({
-        id: item.id,
-        productId: item.product_id,
-        barcode: item.product_barcode,
-        title: item.product_title,
-        author: item.product_author,
-        category: item.prduct_category,
-        image: item.product_image,
-        scannedPrice: item.scannedPrice,
-        itemType: item.product_itemType,
-        createdAt: item.createdAt,
-      }));
+      const data = await apiJson<{
+        result?: boolean;
+        inventoryList?: Array<{
+          id: number;
+          createdAt: string;
+          scannedPrice?: string | number;
+          recommendation?: string;
+          product?: {
+            id: number;
+            barcode?: string;
+            title?: string;
+            author?: string;
+            publisher?: string;
+            platform?: string | null;
+            itemType?: string;
+            image?: string;
+          };
+        }>;
+      }>('/inventory');
+      const inventoryList = (data?.inventoryList ?? []).map((item: any) => {
+        const product = item.product ?? {};
+        return {
+          id: item.id,
+          productId: product.id,
+          barcode: product.barcode ?? '',
+          title: product.title ?? '',
+          author: product.author,
+          publisher: product.publisher,
+          platform: product.platform ?? undefined,
+          image: product.image,
+          scannedPrice: Number(item.scannedPrice) || 0,
+          itemType: product.itemType,
+          createdAt: item.createdAt,
+        };
+      });
       setItems(inventoryList);
       setError(null);
     } catch (err) {
@@ -153,7 +175,8 @@ const Inventory = () => {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Item</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Barcode</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Rating</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Publisher</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Platform</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Price at Scan</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Scanned</th>
                   <th className="px-4 py-3" />
@@ -162,13 +185,13 @@ const Inventory = () => {
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
                       Loading inventory…
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
                       No items found.
                     </td>
                   </tr>
@@ -190,14 +213,14 @@ const Inventory = () => {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{item.title}</div>
                             {item.author && <div className="text-xs text-gray-500">{item.author}</div>}
-                            {item.itemType && <div className="text-xs text-gray-400">{item.itemType}</div>}
+                            <div className="text-xs text-gray-400">{item.itemType}</div>
                           </div>
                         </div>
                       </td>
-                      {item.publisher && <td className="px-4 py-3 text-sm text-gray-700">{item.publisher}</td>}
-                      {item.platform && <td className="px-4 py-3 text-sm text-gray-700">{item.platform}</td>}
                       <td className="px-4 py-3 text-sm text-gray-700">{item.barcode}</td>
-                      <td className="px-4 py-3 text-sm font-medium">{'$' + item.scannedPrice.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{item.publisher ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{item.platform ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{'$' + Number(item.scannedPrice).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {new Date(item.createdAt).toLocaleString()}
                       </td>

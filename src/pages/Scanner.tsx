@@ -84,10 +84,8 @@ const Scanner = () => {
           conRes = await apiJson<{ result: boolean; connect: boolean }>('/amazon/user/connect');
         }
         setIsAmazonConnected(conRes?.connect || false);
-        console.log(conRes?.connect);
         const limRes = await apiJson<{ result: boolean; limit: boolean }>('/amazon/limit');
         setIsAmazonLimited(limRes?.limit || false);
-        console.log(limRes?.limit);
 
         if(role === 'admin' && !conRes?.connect && !limRes?.limit) {
           setShowAmazonModal(true);
