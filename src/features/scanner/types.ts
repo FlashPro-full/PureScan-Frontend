@@ -1,11 +1,9 @@
 export type Recommendation = 'keep' | 'discard' | 'warn';
 
-export type ItemType = 'books' | 'video_games' | 'music' | 'videos' | 'other';
-
 export type ScanResult = {
   title: string;
   category: string;
-  itemType: ItemType;
+  itemType: string;
   image: string;
   currentPrice: number;
   suggestedPrice: number;
@@ -25,7 +23,7 @@ export type HistoryItem = ScanResult & { barcode: string; timestamp: Date };
 
 export type ScanFilter = {
   userId?: string;
-  itemType?: ItemType | 'all';
+  itemType?: string;
   recommendation?: Recommendation | 'all';
   startDate?: Date;
   endDate?: Date;

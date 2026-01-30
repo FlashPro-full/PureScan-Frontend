@@ -5,18 +5,18 @@ import { AlertTriangle, ExternalLink, Shield, CheckCircle, X, Loader } from 'luc
 interface AmazonConnectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConnect: (credentials: { sellerId: string; accessToken: string; refreshToken: string }) => void;
+  onConnect: (credentials: { clientId: string; clientSecret: string; refreshToken: string }) => void;
 }
 
 const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionModalProps) => {
   const [step, setStep] = useState<'info' | 'connect' | 'success'>('info');
   const [isConnecting, setIsConnecting] = useState(false);
-  const [sellerId, setSellerId] = useState('');
-  const [accessToken, setAccessToken] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
   const [refreshToken, setRefreshToken] = useState('');
 
   const handleConnect = async () => {
-    if (!sellerId.trim() || !accessToken.trim() || !refreshToken.trim()) {
+    if (!clientId.trim() || !clientSecret.trim() || !refreshToken.trim()) {
       return;
     }
 
@@ -25,7 +25,7 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      onConnect({ sellerId, accessToken, refreshToken });
+      onConnect({ clientId, clientSecret, refreshToken });
       setStep('success');
     } catch (error) {
       console.error('Failed to connect Amazon account:', error);
@@ -37,8 +37,8 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
   const handleFinish = () => {
     onClose();
     setStep('info');
-    setSellerId('');
-    setAccessToken('');
+    setClientId('');
+    setClientSecret('');
     setRefreshToken('');
   };
 
@@ -95,7 +95,7 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span>Developer credentials (Seller ID, Access Token, Refresh Token)</span>
+                      <span>Developer credentials (Client ID, Client Secret, Refresh Token)</span>
                     </li>
                   </ul>
                 </div>
@@ -106,7 +106,7 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
                     <li>1. Go to your Amazon Seller Central Developer Console</li>
                     <li>2. Navigate to "Apps & Services" → "Develop Apps"</li>
                     <li>3. Create or select your PureScan application</li>
-                    <li>4. Copy your Seller ID, Access Token, and Refresh Token</li>
+                    <li>4. Copy your Client ID, Client Secret, and Refresh Token</li>
                   </ol>
                   <a
                     href="https://sellercentral.amazon.com/developer/console"
@@ -151,26 +151,26 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Seller ID
+                    Client ID
                   </label>
                   <input
                     type="text"
-                    value={sellerId}
-                    onChange={(e) => setSellerId(e.target.value)}
-                    placeholder="A1XXXXXXXXXXX"
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    placeholder="amzn1.application-oa2-client.xxx..."
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Access Token
+                    Client Secret
                   </label>
                   <input
                     type="password"
-                    value={accessToken}
-                    onChange={(e) => setAccessToken(e.target.value)}
-                    placeholder="Atza|IwEBxxxxxxxxxxxxxxxxxxxxxxxx"
+                    value={clientSecret}
+                    onChange={(e) => setClientSecret(e.target.value)}
+                    placeholder="amzn1.oa2-cs.v1.xxxx..."
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
@@ -202,7 +202,7 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
                 </Button>
                 <Button 
                   onClick={handleConnect} 
-                  disabled={!sellerId.trim() || !accessToken.trim() || !refreshToken.trim() || isConnecting}
+                  disabled={!clientId.trim() || !clientSecret.trim() || !refreshToken.trim() || isConnecting}
                   className="flex-1 bg-orange-500 hover:bg-orange-600 text-white disabled:bg-gray-400"
                 >
                   {isConnecting ? (
@@ -232,7 +232,7 @@ const AmazonConnectionModal = ({ isOpen, onClose, onConnect }: AmazonConnectionM
                 </div>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="text-sm text-green-700">
-                    <strong>Connected Account:</strong> {sellerId}
+                    <strong>Connected Account:</strong> {clientId}
                   </div>
                 </div>
               </div>

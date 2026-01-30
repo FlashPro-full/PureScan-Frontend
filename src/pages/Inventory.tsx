@@ -4,22 +4,17 @@ import { apiFetch, apiJson } from '../api/client';
 type Rating = 'Movies' | 'Games' | 'Music' | 'Videos';
 
 type InventoryItem = {
-  id: string;
+  id: number;
+  productId: number;
   barcode: string;
   title: string;
   author?: string;
-  category?: string;
+  publisher?: string;
+  platform?: string;
+  itemType?: string;
   image?: string;
   scannedPrice: number;
-  rating: Rating;
-  timestamp: string;
-};
-
-const ratingStyles: Record<Rating, string> = {
-  Movies: 'bg-red-50 text-red-700 border border-red-200',
-  Games: 'bg-blue-50 text-blue-700 border border-blue-200',
-  Music: 'bg-amber-50 text-amber-700 border border-amber-200',
-  Videos: 'bg-rose-50 text-rose-700 border border-rose-200',
+  createdAt: string;
 };
 
 const Inventory = () => {
@@ -32,19 +27,20 @@ const Inventory = () => {
   const loadInventory = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiJson<{ items: InventoryItem[] }>('/inventory');
-      const items = (data?.items ?? []).map((item: any) => ({
+      const data = await apiJson<{ result: boolean, inventoryList: InventoryItem[] }>('/inventory');
+      const inventoryList = (data?.inventoryList ?? []).map((item: any) => ({
         id: item.id,
-        barcode: item.barcode,
-        title: item.title,
-        author: item.author || undefined,
-        category: item.category || undefined,
-        image: item.image || undefined,
-        scannedPrice: parseFloat(item.scannedPrice) || 0,
-        rating: item.rating || 'FBA',
-        timestamp: item.timestamp || item.createdAt || new Date().toISOString(),
+        productId: item.product_id,
+        barcode: item.product_barcode,
+        title: item.product_title,
+        author: item.product_author,
+        category: item.prduct_category,
+        image: item.product_image,
+        scannedPrice: item.scannedPrice,
+        itemType: item.product_itemType,
+        createdAt: item.createdAt,
       }));
-      setItems(items);
+      setItems(inventoryList);
       setError(null);
     } catch (err) {
       console.error('[inventory] failed to load items', err);
@@ -64,27 +60,15 @@ const Inventory = () => {
       const matchesQuery = !q
         || item.title.toLowerCase().includes(q)
         || (item.author?.toLowerCase().includes(q) ?? false)
-        || item.barcode.includes(q);
-      const matchesRating = ratingFilter === 'All' || item.rating === ratingFilter;
+        || item.barcode.includes(q)
+        || item.publisher?.toLowerCase().includes(q)
+        || item.platform?.toLowerCase().includes(q)
+      const matchesRating = ratingFilter === 'All' || item.itemType === ratingFilter;
       return matchesQuery && matchesRating;
     });
   }, [items, query, ratingFilter]);
 
-  const updateItem = async (id: string, patch: Partial<InventoryItem>) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-    try {
-      await apiFetch(`/inventory/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ rating: patch.rating }),
-      });
-    } catch (err) {
-      console.error('[inventory] failed to update item', err);
-      setError(err instanceof Error ? err.message : 'Failed to update item');
-      void loadInventory();
-    }
-  };
-
-  const removeItem = async (id: string) => {
+  const removeItem = async (id: number) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
     try {
       await apiFetch(`/inventory/${encodeURIComponent(id)}`, {
@@ -206,27 +190,16 @@ const Inventory = () => {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{item.title}</div>
                             {item.author && <div className="text-xs text-gray-500">{item.author}</div>}
-                            {item.category && <div className="text-xs text-gray-400">{item.category}</div>}
+                            {item.itemType && <div className="text-xs text-gray-400">{item.itemType}</div>}
                           </div>
                         </div>
                       </td>
+                      {item.publisher && <td className="px-4 py-3 text-sm text-gray-700">{item.publisher}</td>}
+                      {item.platform && <td className="px-4 py-3 text-sm text-gray-700">{item.platform}</td>}
                       <td className="px-4 py-3 text-sm text-gray-700">{item.barcode}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={item.rating}
-                          onChange={(e) => updateItem(item.id, { rating: e.target.value as Rating })}
-                          className={`px-2 py-1 rounded text-xs font-medium ${ratingStyles[item.rating]}`}
-                        >
-                          {(['Movies', 'Games', 'Music', 'Videos'] as Rating[]).map((rating) => (
-                            <option key={rating} value={rating}>
-                              {rating}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
                       <td className="px-4 py-3 text-sm font-medium">{'$' + item.scannedPrice.toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {new Date(item.timestamp).toLocaleString()}
+                        {new Date(item.createdAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button

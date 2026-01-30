@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Shield,
 } from 'lucide-react';
+import BarcodeScanner from 'react-qr-barcode-scanner';
 import { useSession } from '../contexts/SessionContext';
 import { useToast } from '../contexts/ToastContext';
 import { useScannerController } from '../hooks/useScannerController';
@@ -46,7 +47,6 @@ const getRecommendationIcon = (rec: Recommendation | string) => {
 const Scanner = () => {
   const { role, user } = useSession();
   const {
-    videoRef,
     scanMode,
     setScanMode,
     isScanning,
@@ -63,7 +63,10 @@ const Scanner = () => {
     allUsers,
     cameraError,
     handleCameraScan,
+    handleCameraError,
+    handleBarcodeDetected,
     handleManualScan,
+    clearCameraError,
   } = useScannerController(user?.email || null);
   const { showToast } = useToast();
   const [showExtHelp, setShowExtHelp] = useState(false);
@@ -81,8 +84,14 @@ const Scanner = () => {
           conRes = await apiJson<{ result: boolean; connect: boolean }>('/amazon/user/connect');
         }
         setIsAmazonConnected(conRes?.connect || false);
+        console.log(conRes?.connect);
         const limRes = await apiJson<{ result: boolean; limit: boolean }>('/amazon/limit');
         setIsAmazonLimited(limRes?.limit || false);
+        console.log(limRes?.limit);
+
+        if(role === 'admin' && !conRes?.connect && !limRes?.limit) {
+          setShowAmazonModal(true);
+        }
     
       } catch (error) {
         console.error('Failed to check Amazon connection:', error);
@@ -91,10 +100,7 @@ const Scanner = () => {
     };
     checkAmazonConnection();
     
-    if (role === 'admin' && !isAmazonLimited) {
-      setShowAmazonModal(true);
-    }
-  }, [role]);
+  }, []);
 
   const handleConnectRequest = () => {
     if(!isAmazonLimited) {
@@ -105,7 +111,7 @@ const Scanner = () => {
     }
   };
 
-  const handleAmazonConnect = async (credentials: { sellerId: string; accessToken: string; refreshToken: string }) => {
+  const handleAmazonConnect = async (credentials: { clientId: string; clientSecret: string; refreshToken: string }) => {
     setIsAmazonConnected(true);
     setShowAmazonModal(false);
     try {
@@ -222,35 +228,48 @@ const Scanner = () => {
 
               {scanMode === 'camera' && (
                 <div className="bg-white rounded-2xl shadow border border-gray-200 p-6 flex-1 flex flex-col">
-                  <div className="text-center flex-1 flex flex-col">
-                    <div className="relative bg-black rounded-lg mb-4 overflow-hidden w-full aspect-video sm:aspect-auto sm:flex-1 sm:min-h-[400px] max-h-[60vh] sm:max-h-none">
-                      <video 
-                        ref={videoRef} 
-                        className="w-full h-full object-cover" 
-                        muted 
-                        playsInline 
-                        style={{ minHeight: '200px' }}
-                      />
+                  <div className="text-center flex-1 flex flex-col min-h-0">
+                    <div className="relative bg-black rounded-lg mb-4 overflow-hidden w-full aspect-video flex-1 min-h-[320px] flex items-center justify-center">
+                      {!cameraError && (
+                        <div className="absolute inset-0 w-full h-full min-h-[300px]">
+                          <BarcodeScanner
+                            width="100%"
+                            height="100%"
+                            facingMode="environment"
+                            onUpdate={(_, result) => {
+                              if (!isScanning) return;
+                              if (!result) return;
+                              const code = (typeof result.getText === 'function' ? result.getText() : '').trim();
+                              if (code) handleBarcodeDetected(code);
+                            }}
+                            onError={handleCameraError}
+                          />
+                        </div>
+                      )}
                       {cameraError && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 text-white p-4">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-900/90 text-white p-4">
                           <div className="text-center">
                             <CameraOff className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-400" />
                             <p className="text-lg font-medium">Camera Error</p>
                             <p className="text-sm opacity-75">{cameraError}</p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={clearCameraError}
+                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium"
+                          >
+                            Retry
+                          </button>
                         </div>
                       )}
                       {!isScanning && !cameraError && (
-                        <div className="absolute inset-0 flex items-center justify-center text-white bg-gray-800/50">
-                          <div className="text-center">
-                            <Camera className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-200" />
-                            <p className="text-lg font-medium">Camera Ready</p>
-                            <p className="text-sm opacity-75">Tap scan to start</p>
-                          </div>
+                        <div className="absolute bottom-0 left-0 right-0 py-2 flex items-center justify-center gap-2 text-white/90 bg-black/50 pointer-events-none">
+                          <Camera className="w-4 h-4" />
+                          <span className="text-sm">Tap Start Scan to detect barcodes</span>
                         </div>
                       )}
-                      {isScanning && (
-                        <div className="absolute inset-0 flex items-center justify-center">
+                      {isScanning && !cameraError && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                           <div className="w-3/4 h-1/2 border-4 border-dashed border-red-500 rounded-lg" />
                           <div className="absolute top-0 bottom-0 w-full h-1 bg-red-500 animate-[scan-beam_2s_infinite]" />
                           <style>{`
@@ -266,7 +285,7 @@ const Scanner = () => {
                     <button
                       onClick={handleCameraScan}
                       disabled={!!cameraError || !isAmazonConnected}
-                      className="bg-red-500 hover:bg-red-600 hover:shadow-lg active:bg-red-700 active:shadow-md disabled:bg-gray-400 disabled:hover:shadow-none text-white px-6 py-3 sm:px-8 rounded-lg font-medium transition-all duration-150 flex items-center space-x-2 mx-auto text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                      className="bg-red-500 hover:bg-red-600 hover:shadow-lg active:bg-red-700 active:shadow-md disabled:bg-gray-400 disabled:hover:shadow-none text-white px-6 py-3 sm:px-8 rounded-lg font-medium transition-all duration-150 flex items-center space-x-2 mx-auto text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 shrink-0"
                     >
                       <Scan className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span>{isScanning ? 'Stop Scan' : 'Start Scan'}</span>
